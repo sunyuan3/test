@@ -1,3 +1,7 @@
+# Resource management of Docker - Cgroups feature supporting Docker
+
+With Docker technology has been accepted by more and more individuals and enterprises, Docker is more widely applied in many aspects. Docker resource management includes the limitation of CPU, memory and IO resources, but for the most part of Docker users, they often just know how without knowing why when they are using Docker resource management interface. This article introduces the cgroups feature which is supporting Docker resource management, and lists Docker resource management interfaces and the corresponding cgroups interfaces, so that the readers can not only know how but also know why about Docker resource management.
+
 ## 1. Overview of Docker resource management interfaces  
 | Option                     |  Description                                                                                                                                    |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,39 +28,37 @@ Cgroups is the abbreviation of control groups, which is a linux feature that lim
 
 2.1 memory -- This subsystem is to control the maximum amount of memory in a cgroup.<br>
 
-enables flexible sharing of memory. Under normal circumstances, control groups are allowed to use as much of the memory as needed, constrained only by their hard limits set with the memory.limit_in_bytes parameter. However, when the system detects memory contention or low memory, control groups are forced to restrict their consumption to their soft limits. To set the soft limit for example to 256 MB, execute:
-
-| common cgroup interface | description | the corresponding docker interface |
+| memory cgroup interface | description | the corresponding docker interface |
 | ---------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------- |
 | cgroup/memory/memory.limit_in_bytes | sets the maximum amount of user memory, in bytes. And it is possible to use suffixes to represent larger units -- k or K for kilobytes, m or M for megebytes, and g or G for gigabytes. | -m, --memory="" |
 | cgroup/memory/memory.memsw.limit_in_bytes | sets the maximum amount of memory and swap space, in bytes. You can prevent a run out of swap partition by setting this value. | --memory-swap="" |
-| cgroup/memory/memory.soft_limit_in_bytes |  | --memory-reservation="" |
-| cgroup/memory/memory.kmem.limit_in_bytes |  | --kernel-memory="" |
-| cgroup/memory/memory.oom_control |  | --oom-kill-disable="" |
-| cgroup/memory/memory.swappiness |  | --memory-swappiness="" |
+| cgroup/memory/memory.soft_limit_in_bytes | sets soft limit of memory usage. This limitation won't stop processes using excess memory. however, when the system detects memory contention or low memory, cgroups is forced to restrict its consumption to the soft limits. | --memory-reservation="" |
+| cgroup/memory/memory.kmem.limit_in_bytes | sets hard limit for kernel memory. | --kernel-memory="" |
+| cgroup/memory/memory.oom_control | contains a flag that enables or disables the Out of Memory killer for a cgroup. If disabled(0), tasks that attempt to consume excess memory will not be killed, but be paused until additional memory is freed. In addition, the system will prompt send event notification to user mode, the monitoring program in user mode is able to process it accordingly, such as raising the memory upper limit. | --oom-kill-disable="" |
+| cgroup/memory/memory.swappiness | sets the tendency of the kernel to use the swap partition. The value is between 0 and 100(include 0 and 100), and lower value increases the kernel's tendency to use physical memory. | --memory-swappiness="" |
 
-2.2 cpu -- 这个子系统使用调度程序提供对 CPU 的 cgroup 任务访问。<br>
+2.2 cpu -- This subsystem uses the scheduler to provide access to cpu cgroup tasks. <br>
 
-| 子系统常用cgroups接口 | 描述 | 对应的docker接口 |
-| ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
-| cgroup/cpu/cpu.shares | 负责CPU比重分配的接口。假设我们在cgroupfs的根目录下创建了两个cgroup（C1和C2），并且将cpu.shares分别配置为512和1024，那么当C1和C2争用CPU时，C2将会比C1得到多一倍的CPU占用率。要注意的是，只有当它们争用CPU时CPU share才会起作用，如果C2是空闲的，那么C1可以得到全部的CPU资源。 | -c, --cpu-shares="" |
-| cgroup/cpu/cpu.cfs_period_us | 负责CPU带宽限制，需要与cpu.cfs_quota_us搭配使用。我们可以将period设置为1秒，将quota设置为0.5秒，那么cgroup中的进程在1秒内最多只能运行0.5秒，然后就会被强制睡眠，直到下一个1秒才能继续运行。 | --cpu-period="" |
-| cgroup/cpu/cpu.cfs_quota_us | 负责CPU带宽限制，需要与cpu.cfs_period_us搭配使用。 | --cpu-quota="" |
+| cpu cgroup interface | description | the corresponding docker interface |
+| ---------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------- |
+| cgroup/cpu/cpu.shares | specifies a relative share of CPU time avaliable to the tasks in a cgroup. Supposed that we have created two cgroups(C1 and C2) under the root directory of cgroupfs, and set the cpu.shares values to 512 and 1024 respectively. Then when C1 and C2 are vying for CPU, C2 will receive twice the CPU time of C1. It is noteworthy that cpu.shares only works when CPU is being competed, if C2 is idle, then C1 can receive the whole CPU time. | -c, --cpu-shares="" |
+| cgroup/cpu/cpu.cfs_period_us | specifies the CPU bandwidth limit, and should collocate with cpu.cfs_quota_us. We can set the period to 1s, and the quota to 0.5s, so that the task in the cgroup can work at most 0.5s within 1s, and then the task will be forced to sleep until the next 1s comes. | --cpu-period="" |
+| cgroup/cpu/cpu.cfs_quota_us | specifies the CPU bandwidth limit, and should collocate with cpu.cfs_period_us | --cpu-quota="" |
 
-2.3 cpuset -- 这个子系统为 cgroup 中的任务分配独立 CPU（在多核系统）和内存节点。<br>
+2.3 cpuset -- This subsystem assigns individual CPUs and memory modes to cgroups.<br>
 
-| 子系统常用cgroups接口 | 描述 | 对应的docker接口 |
-| ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
-| cgroup/cpuset/cpuset.cpus | 允许进程使用的CPU列表（例如：0-4,9）。 | --cpuset-cpus="" |
-| cgroup/cpuset/cpuset.mems | 允许进程使用的内存节点列表（例如：0-1）。 | --cpuset-mems="" |
+| cpuset cgroup interface | description | the corresponding docker interface |
+| ---------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------- |
+| cgroup/cpuset/cpuset.cpus | specifies the CPUs that tasks in this cgroup are permitted to access(0-4, 9, etc.). | --cpuset-cpus="" |
+| cgroup/cpuset/cpuset.mems | specifies the memory nodes that tasks in this cgroup are permitted to access(0-1, etc.) | --cpuset-mems="" |
 
-2.4 blkio -- 这个子系统为块设备设定输入/输出限制，比如物理设备（磁盘、固态硬盘、USB等）。<br>
+2.4 blkio -- This subsystem controls and monitors access to I/O on block devices, such as physical devices(disk, solid-state drives, USB, etc.).<br>
 
-| 子系统常用cgroups接口 | 描述 | 对应的docker接口 |
-| ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
-| cgroup/blkio/blkio.weight | 设置权重值，取值范围是10至1000之间的整数（包含10和1000）。这跟cpu.shares类似，是比重分配，而不是绝对带宽的限制，因此只有当不同的cgroup在争用同一个块设备的带宽时，才会起作用。 | --blkio-weight="" |
-| cgroup/blkio/blkio.weight_device | 对具体的设备设置权重值，这个值会覆盖上述的blkio.weight。 | --blkio-weight-device=""  |
-| cgroup/blkio/blkio.throttle.read_bps_device | 对具体的设备，设置每秒读块设备的带宽上限。 | --device-read-bps="" |
-| cgroup/blkio/blkio.throttle.write_bps_device | 设置每秒写块设备的带宽上限。同样需要指定设备。 | --device-write-bps="" |
-| cgroup/blkio/blkio.throttle.read_iops_device | 设置每秒读块设备的IO次数的上限。同样需要指定设备。 | --device-read-iops="" |
-| cgroup/blkio/blkio.throttle.write_iops_device | 设置每秒写块设备的IO次数的上限。同样需要指定设备。 | --device-write-iops="" |
+| blkio cgroup interface | description | the corresponding docker interface |
+| ---------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------- |
+| cgroup/blkio/blkio.weight | specifies the relative proportion(weight) of block I/O access, in the range from 10 to 1000(include 10 and 1000). It is similar to cpu.shares, is proportion allocation rather than absolute bandwidth constraint. So it only works when different cgroups are competing to use the bandwidth of the same block device.  | --blkio-weight="" |
+| cgroup/blkio/blkio.weight_device | specifies the relative proportion(weight) of I/O access on specific devices, and this value will override the blkio.weight parameter for specific devices. | --blkio-weight-device=""  |
+| cgroup/blkio/blkio.throttle.read_bps_device | specifies the upper bandwidth limit of read operations for specific devices. | --device-read-bps="" |
+| cgroup/blkio/blkio.throttle.write_bps_device | specifies the upper bandwidth limit of write operations for specific devices. | --device-write-bps="" |
+| cgroup/blkio/blkio.throttle.read_iops_device | specifies the upper limit on the I/O number of read operations for specific devices. | --device-read-iops="" |
+| cgroup/blkio/blkio.throttle.write_iops_device | specifies the upper limit on the I/O number of write operations for specific devices. | --device-write-iops="" |
