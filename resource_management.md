@@ -25,14 +25,15 @@ Cgroups is the abbreviation of control groups, which is a linux feature that lim
 2.1 memory -- This subsystem is to control the maximum amount of memory in a cgroup.<br>
 
 enables flexible sharing of memory. Under normal circumstances, control groups are allowed to use as much of the memory as needed, constrained only by their hard limits set with the memory.limit_in_bytes parameter. However, when the system detects memory contention or low memory, control groups are forced to restrict their consumption to their soft limits. To set the soft limit for example to 256 MB, execute:
+
 | common cgroup interface | description | the corresponding docker interface |
-| ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| ---------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------- |
 | cgroup/memory/memory.limit_in_bytes | sets the maximum amount of user memory, in bytes. And it is possible to use suffixes to represent larger units -- k or K for kilobytes, m or M for megebytes, and g or G for gigabytes. | -m, --memory="" |
 | cgroup/memory/memory.memsw.limit_in_bytes | sets the maximum amount of memory and swap space, in bytes. You can prevent a run out of swap partition by setting this value. | --memory-swap="" |
 | cgroup/memory/memory.soft_limit_in_bytes |  | --memory-reservation="" |
-| cgroup/memory/memory.kmem.limit_in_bytes |设定内核内存上限。| --kernel-memory="" |
-| cgroup/memory/memory.oom_control |如果设置为0，那么在内存使用量超过上限时，系统不会杀死进程，而是阻塞进程直到有内存被释放可供使用时，另一方面，系统会向用户态发送事件通知，用户态的监控程序可以根据该事件来做相应的处理，例如提高内存上限等。| --oom-kill-disable="" |
-| cgroup/memory/memory.swappiness |控制内核使用交换分区的倾向。取值范围是0至100之间的整数（包含0和100）。值越小，越倾向使用物理内存。| --memory-swappiness="" |
+| cgroup/memory/memory.kmem.limit_in_bytes |  | --kernel-memory="" |
+| cgroup/memory/memory.oom_control |  | --oom-kill-disable="" |
+| cgroup/memory/memory.swappiness |  | --memory-swappiness="" |
 
 2.2 cpu -- 这个子系统使用调度程序提供对 CPU 的 cgroup 任务访问。<br>
 
