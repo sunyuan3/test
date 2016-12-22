@@ -1,6 +1,6 @@
 # Resource management of Docker - Cgroups feature supporting Docker
 
-With Docker technology has been accepted by more and more individuals and enterprises, Docker is more widely applied in many aspects. Docker resource management includes the limitation of CPU, memory and IO resources, but for the most part of Docker users, they often just know how without knowing why when they are using Docker resource management interface. This article introduces the cgroups feature which is supporting Docker resource management, and lists Docker resource management interfaces and the corresponding cgroups interfaces, so that the readers can not only know how but also know why about Docker resource management.
+With Docker technology has been accepted by more and more individuals and enterprises, Docker is more widely applied in many aspects. Docker resource management includes the limitation of CPU, memory, IO and other resources, but for most of Docker users, they often just know how without knowing why when they are using Docker resource management interfaces. This article introduces the cgroups feature which supports Docker resource management, and lists Docker resource management interfaces and the corresponding cgroups interfaces, so that the readers can know why about Docker resource management.
 
 ## 1. Overview of Docker resource management interfaces  
 | Option                     |  Description                                                                                                                                    |
@@ -26,7 +26,7 @@ With Docker technology has been accepted by more and more individuals and enterp
 ## 2. Introduction of Docker resource management principle——Cgroups subsystems
 Cgroups is the abbreviation of control groups, which is a linux feature that limits，accounts for, and isolates the physical resource usage (CPU, memory and disk I/O, etc.) of process groups. Engineers at Google started the work on this feature, and then cgroups functionality was merged into the linux kernel mainline. The allocation and management of resources are implemented by cgroups subsystems. There are seven cgroups systems, respectively are cpuset, cpu, cpuacct, blkio, devices, freezer, and memory. The following describes four cgroups subsystems which are related to Docker resource management interfaces.
 
-2.1 memory -- This subsystem is to control the maximum amount of memory in a cgroup.<br>
+2.1 memory -- This subsystem is to set the limit of memory usage in a cgroup.<br>
 
 | memory cgroup interface | description | the corresponding docker interface |
 | ---------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------- |
