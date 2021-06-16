@@ -1,0 +1,7 @@
+arch: arm64
+language: go
+go:
+  - 1.16.5
+services:
+  - docker
+script: git clone https://github.com/AliyunContainerService/terway.git && cd terway && tag=$(git describe --long --tags)-arm64 && docker build -t registry.cn-hongkong.aliyuncs.com/sunyuan3/terway:${tag} . && echo "$DOCKER_PASSWORD" | docker login --username=pleasuresun@sina.com --password-stdin registry.cn-hongkong.aliyuncs.com && docker push registry.cn-hongkong.aliyuncs.com/sunyuan3/terway:${tag}
